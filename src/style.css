@@ -42,9 +42,80 @@ h1 {
   text-align: center;
 }
 
-#map {
+#map-container {
+  position: relative;
   width: 600px;
-  height: 480px;
+  height: 520px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+#hex-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.controls {
+  margin: 20px 0;
+}
+
+.controls label {
+  margin-right: 10px;
+}
+
+.hex-size-display {
+  margin: 0 15px;
+  display: inline-block;
+  width: 6ch;
+  text-align: center;
+}
+
+.generate-button {
+  margin-left: 30px;
+}
+
+button {
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#hex-decrease,
+#hex-increase {
+  padding: 6px 12px;
+  font-weight: bold;
+  min-width: 32px;
 }
 
 @media (prefers-color-scheme: light) {

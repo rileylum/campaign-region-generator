@@ -48,6 +48,7 @@ h1 {
   height: 520px;
   overflow: hidden;
   border: 2px solid rgba(255, 255, 255, 0.3);
+  background-color: #6baed6;
 }
 
 #map {
@@ -67,6 +68,14 @@ h1 {
 
 .controls {
   margin: 20px 0;
+}
+
+.seed-controls {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
 }
 
 .controls label {
@@ -116,6 +125,20 @@ button:disabled {
   padding: 6px 12px;
   font-weight: bold;
   min-width: 32px;
+}
+
+#seed-input {
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  width: 120px;
+}
+
+.current-seed {
+  font-size: 14px;
+  opacity: 0.8;
 }
 
 @media (prefers-color-scheme: light) {

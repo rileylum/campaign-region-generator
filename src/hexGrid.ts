@@ -25,8 +25,6 @@ export function drawHexGrid(targetHexSize = 50) {
   // Fixed canvas size
   canvas.width = 600;
   canvas.height = 520;
-  canvas.style.width = 600;
-  canvas.style.height = 520;
   ctx.clearRect(0, 0, 600, 520);
 
   const hexSize = targetHexSize;

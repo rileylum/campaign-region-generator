@@ -1,22 +1,84 @@
 import { Map } from 'ol';
+import Feature from 'ol/Feature';
 import VectorSource from 'ol/source/Vector';
 import LineString from 'ol/geom/LineString';
 import { lineString as turfLineString } from '@turf/helpers';
 import booleanIntersects from '@turf/boolean-intersects';
 import { toLonLat, fromLonLat } from 'ol/proj';
 
+// Seeded random number generator
+class SeededRandom {
+  private seed: number;
+
+  constructor(seed: number) {
+    this.seed = seed;
+  }
+
+  next(): number {
+    this.seed = (this.seed * 9301 + 49297) % 233280;
+    return this.seed / 233280;
+  }
+}
+
+let currentSeed: number | null = null;
+let rng: SeededRandom | null = null;
+
+export function setSeed(seed: number | null) {
+  currentSeed = seed;
+  if (seed !== null) {
+    rng = new SeededRandom(seed);
+  } else {
+    rng = null;
+  }
+}
+
+export function getCurrentSeed(): number | null {
+  return currentSeed;
+}
+
+export function generateRandomSeed(): number {
+  return Math.floor(Math.random() * 1000000);
+}
+
+export function getSeedFromURL(): number | null {
+  const urlParams = new URLSearchParams(window.location.search);
+  const seedParam = urlParams.get('seed');
+  if (seedParam) {
+    const seed = parseInt(seedParam, 10);
+    return isNaN(seed) ? null : seed;
+  }
+  return null;
+}
+
+export function updateURLWithSeed(seed: number | null) {
+  const url = new URL(window.location.href);
+  if (seed !== null) {
+    url.searchParams.set('seed', seed.toString());
+  } else {
+    url.searchParams.delete('seed');
+  }
+  window.history.replaceState({}, '', url.toString());
+}
+
+function seededRandom(): number {
+  if (rng) {
+    return rng.next();
+  }
+  return Math.random();
+}
+
 function getRandomLonLat() {
-  const lon = Math.random() * 360 - 180;
-  const lat = Math.random() * 180 - 90;
+  const lon = seededRandom() * 360 - 180;
+  const lat = seededRandom() * 180 - 90;
   return [lon, lat];
 }
 
-function getRandomZoom(min = 3, max = 13) {
-  return Math.random() * (max - min) + min;
+function getRandomZoom(min = 5, max = 12) {
+  return seededRandom() * (max - min) + min;
 }
 
 function getRandomRotation() {
-  return Math.random() * 2 * Math.PI;
+  return seededRandom() * 2 * Math.PI;
 }
 
 function getViewEdgeLines(extent: number[], insetRatio = 0.05) {
@@ -69,10 +131,10 @@ function countEdgeIntersections(
 
   for (const edge of edgeLines) {
     const turfEdge = olLineStringToTurf(edge);
-    const intersects = visibleFeatures.some((feature: any) => {
+    const intersects = visibleFeatures.some((feature: Feature) => {
       const geom = feature.getGeometry();
-      if (geom.getType() !== 'LineString') return false;
-      const turfFeature = olLineStringToTurf(geom);
+      if (!geom || geom.getType() !== 'LineString') return false;
+      const turfFeature = olLineStringToTurf(geom as LineString);
       return booleanIntersects(turfEdge, turfFeature);
     });
 

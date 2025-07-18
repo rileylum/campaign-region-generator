@@ -1,11 +1,10 @@
 import './style.css';
 import {
   createMap,
-  loadCoastlineLayers,
-  loadLandLayers,
-  loadOceanLayers,
+  loadAllDatasources,
   getActiveCoastlineLayer,
 } from './mapSetup';
+import { DATASOURCES } from './types';
 import { initializeControls } from './controls';
 import { goToRandomPlace } from './navigation';
 import { takeScreenshot } from './screenshot';
@@ -26,20 +25,23 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <button id="btn" class="generate-button">Generate!</button>
       <button id="screenshot" class="screenshot-button">Screenshot</button>
     </div>
+    <div class="seed-controls">
+      <label for="seed-input">Seed:</label>
+      <input type="text" id="seed-input" placeholder="Enter seed (optional)">
+      <span class="current-seed">Current: <span id="current-seed-display">-</span></span>
+    </div>
   </div>
 `;
 
 // Initialize the application
 async function initializeApp() {
   const map = createMap();
-  await loadCoastlineLayers(map);
-  await loadLandLayers(map);
-  await loadOceanLayers(map);
+  await loadAllDatasources(map, DATASOURCES);
   initializeControls(map);
 
   // Add screenshot button handler
   document.getElementById('screenshot')?.addEventListener('click', () => {
-    takeScreenshot();
+    takeScreenshot(map);
   });
 
   // Navigate to random place on page load after coastlines are loaded

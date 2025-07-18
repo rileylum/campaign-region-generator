@@ -2,8 +2,8 @@ import { Map, View } from 'ol';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import GeoJSON from 'ol/format/GeoJSON';
-import { Style, Stroke, Fill } from 'ol/style';
-import { COASTLINE_SOURCES, LAND_SOURCES, OCEAN_SOURCES } from './types';
+
+import type { DataSource } from './types';
 
 export function createMap(): Map {
   return new Map({
@@ -12,14 +12,14 @@ export function createMap(): Map {
     view: new View({
       center: [0, 0],
       zoom: 18,
-      projection: 'EPSG:3857'
+      projection: 'EPSG:3857',
     }),
     controls: [],
   });
 }
 
-export function loadCoastlineLayers(map: Map): Promise<void> {
-  const promises = COASTLINE_SOURCES.map(({ url, id, minZoom, maxZoom }) => {
+export function loadLayers(map: Map, theme: DataSource[]): Promise<void> {
+  const promises = theme.map(({ url, id, minZoom, maxZoom, style, zOrder }) => {
     return fetch(url)
       .then(response => response.json())
       .then(geojsonData => {
@@ -31,12 +31,8 @@ export function loadCoastlineLayers(map: Map): Promise<void> {
 
         const vectorLayer = new VectorLayer({
           source: vectorSource,
-          style: new Style({
-            stroke: new Stroke({
-              color: '#4682b4',
-              width: 2,
-            }),
-          }),
+          zIndex: zOrder,
+          style: style,
         });
 
         vectorLayer.set('id', id);
@@ -53,74 +49,12 @@ export function loadCoastlineLayers(map: Map): Promise<void> {
   return Promise.all(promises).then(() => {});
 }
 
-export function loadLandLayers(map: Map): Promise<void> {
-  const promises = LAND_SOURCES.map(({ url, id, minZoom, maxZoom }) => {
-    return fetch(url)
-      .then(response => response.json())
-      .then(geojsonData => {
-        const vectorSource = new VectorSource({
-          features: new GeoJSON().readFeatures(geojsonData, {
-            featureProjection: 'EPSG:3857'
-          })
-        })
-
-        const vectorLayer = new VectorLayer({
-          source: vectorSource,
-          opacity: 1,
-          style: new Style({
-            fill: new Fill({
-              color: '#a8c686',
-            })
-          })
-        })
-
-        vectorLayer.set('id', id);
-        vectorLayer.set('minZoom', minZoom);
-        vectorLayer.set('maxZoom', maxZoom);
-
-        map.addLayer(vectorLayer);
-      })
-      .catch(err => {
-        console.error(`Failed to load ${url}:`, err)
-      })
-  })
-
-  return Promise.all(promises).then(() => {})
-}
-
-export function loadOceanLayers(map: Map): Promise<void> {
-  const promises = OCEAN_SOURCES.map(({ url, id, minZoom, maxZoom }) => {
-    return fetch(url)
-      .then(response => response.json())
-      .then(geojsonData => {
-        const vectorSource = new VectorSource({
-          features: new GeoJSON().readFeatures(geojsonData, {
-            featureProjection: 'EPSG:3857'
-          })
-        })
-
-        const vectorLayer = new VectorLayer({
-          source: vectorSource,
-          opacity: 1,
-          style: new Style({
-            fill: new Fill({
-              color: '#6baed6',
-            })
-          })
-        })
-
-        vectorLayer.set('id', id);
-        vectorLayer.set('minZoom', minZoom);
-        vectorLayer.set('maxZoom', maxZoom);
-
-        map.addLayer(vectorLayer);
-      })
-      .catch(err => {
-        console.error(`Failed to load ${url}:`, err)
-      })
-  })
-
-  return Promise.all(promises).then(() => {})
+export async function loadAllDatasources(
+  map: Map,
+  datasources: DataSource[][]
+): Promise<void> {
+  const promises = datasources.map(ds => loadLayers(map, ds));
+  await Promise.all(promises);
 }
 
 export function getActiveCoastlineLayer(

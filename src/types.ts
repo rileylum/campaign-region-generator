@@ -8,6 +8,10 @@ import {
 import type { FeatureLike } from 'ol/Feature';
 import type { StyleFunction } from 'ol/style/Style';
 
+function getBaseUrl(): string {
+  return import.meta.env.BASE_URL || '/';
+}
+
 export interface HexSizeConfig {
   size: number;
   label: string;
@@ -139,7 +143,7 @@ const DRAWORDER = {
 
 export const COASTLINE_SOURCES: DataSource[] = [
   {
-    url: '/coast110.geojson',
+    url: `${getBaseUrl()}coast110.geojson`,
     id: 'coastline-low',
     minZoom: 0,
     maxZoom: 5,
@@ -147,7 +151,7 @@ export const COASTLINE_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.coast,
   },
   {
-    url: '/coast50.geojson',
+    url: `${getBaseUrl()}coast50.geojson`,
     id: 'coastline-mid',
     minZoom: 5,
     maxZoom: 9,
@@ -155,7 +159,7 @@ export const COASTLINE_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.coast,
   },
   {
-    url: '/coast10.geojson',
+    url: `${getBaseUrl()}coast10.geojson`,
     id: 'coastline-high',
     minZoom: 9,
     maxZoom: 24,
@@ -166,7 +170,7 @@ export const COASTLINE_SOURCES: DataSource[] = [
 
 export const LAND_SOURCES: DataSource[] = [
   {
-    url: '/land110.geojson',
+    url: `${getBaseUrl()}land110.geojson`,
     id: 'land-low',
     minZoom: 0,
     maxZoom: 5,
@@ -174,7 +178,7 @@ export const LAND_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.land,
   },
   {
-    url: '/land50.geojson',
+    url: `${getBaseUrl()}land50.geojson`,
     id: 'land-mid',
     minZoom: 5,
     maxZoom: 9,
@@ -182,7 +186,7 @@ export const LAND_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.land,
   },
   {
-    url: '/land10.geojson',
+    url: `${getBaseUrl()}land10.geojson`,
     id: 'land-high',
     minZoom: 9,
     maxZoom: 24,
@@ -193,7 +197,7 @@ export const LAND_SOURCES: DataSource[] = [
 
 export const OCEAN_SOURCES: DataSource[] = [
   {
-    url: '/ocean110.geojson',
+    url: `${getBaseUrl()}ocean110.geojson`,
     id: 'ocean-low',
     minZoom: 0,
     maxZoom: 5,
@@ -201,7 +205,7 @@ export const OCEAN_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.ocean,
   },
   {
-    url: '/ocean50.geojson',
+    url: `${getBaseUrl()}ocean50.geojson`,
     id: 'ocean-mid',
     minZoom: 5,
     maxZoom: 9,
@@ -209,7 +213,7 @@ export const OCEAN_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.ocean,
   },
   {
-    url: '/ocean10.geojson',
+    url: `${getBaseUrl()}ocean10.geojson`,
     id: 'ocean-high',
     minZoom: 9,
     maxZoom: 24,
@@ -220,7 +224,7 @@ export const OCEAN_SOURCES: DataSource[] = [
 
 export const RIVER_SOURCES: DataSource[] = [
   {
-    url: '/river110.geojson',
+    url: `${getBaseUrl()}river110.geojson`,
     id: 'river-low',
     minZoom: 0,
     maxZoom: 5,
@@ -228,7 +232,7 @@ export const RIVER_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.river,
   },
   {
-    url: '/river50.geojson',
+    url: `${getBaseUrl()}river50.geojson`,
     id: 'river-mid',
     minZoom: 5,
     maxZoom: 9,
@@ -236,7 +240,7 @@ export const RIVER_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.river,
   },
   {
-    url: '/river10.geojson',
+    url: `${getBaseUrl()}river10.geojson`,
     id: 'river-high',
     minZoom: 9,
     maxZoom: 24,
@@ -247,7 +251,7 @@ export const RIVER_SOURCES: DataSource[] = [
 
 export const LAKE_SOURCES: DataSource[] = [
   {
-    url: '/lake110.geojson',
+    url: `${getBaseUrl()}lake110.geojson`,
     id: 'lake-low',
     minZoom: 0,
     maxZoom: 5,
@@ -255,7 +259,7 @@ export const LAKE_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.lake,
   },
   {
-    url: '/lake50.geojson',
+    url: `${getBaseUrl()}lake50.geojson`,
     id: 'lake-mid',
     minZoom: 5,
     maxZoom: 9,
@@ -263,7 +267,7 @@ export const LAKE_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.lake,
   },
   {
-    url: '/lake10.geojson',
+    url: `${getBaseUrl()}lake10.geojson`,
     id: 'lake-high',
     minZoom: 9,
     maxZoom: 24,
@@ -274,7 +278,7 @@ export const LAKE_SOURCES: DataSource[] = [
 
 export const PLACE_SOURCES: DataSource[] = [
   {
-    url: '/place110.geojson',
+    url: `${getBaseUrl()}place110.geojson`,
     id: 'place-low',
     minZoom: 0,
     maxZoom: 5,
@@ -282,7 +286,7 @@ export const PLACE_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.place,
   },
   {
-    url: '/place50.geojson',
+    url: `${getBaseUrl()}place50.geojson`,
     id: 'place-mid',
     minZoom: 5,
     maxZoom: 9,
@@ -290,7 +294,7 @@ export const PLACE_SOURCES: DataSource[] = [
     zOrder: DRAWORDER.place,
   },
   {
-    url: '/place10.geojson',
+    url: `${getBaseUrl()}place10.geojson`,
     id: 'place-high',
     minZoom: 9,
     maxZoom: 24,

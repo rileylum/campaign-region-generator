@@ -33,6 +33,16 @@ The application displays coastlines, land masses, rivers, lakes, and populated p
 - Medium detail (50m) for regional views  
 - Low detail (110m) for continental overviews
 
+## TODO
+
+- Toggle hex overlay on and off
+- Increase resolution of screenshots
+- Toggle land and ocean
+- Add places
+- User created features
+- Terrain generation (both elevation and terrain types)
+- Stocking using popular methods
+
 ## Data Attribution
 
 Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com.

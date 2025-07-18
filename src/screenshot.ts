@@ -7,7 +7,7 @@ export function takeScreenshot(map?: Map) {
     console.error('Canvas elements or map not found');
     return;
   }
-  
+
   // Get the map canvas and apply rotation manually
   const mapCanvas = document.querySelector(
     '.ol-layer canvas'
@@ -16,7 +16,9 @@ export function takeScreenshot(map?: Map) {
     const rotation = map.getView().getRotation();
 
     // Create a larger canvas for the rotated map to prevent clipping
-    const diagonal = Math.sqrt(mapCanvas.width * mapCanvas.width + mapCanvas.height * mapCanvas.height);
+    const diagonal = Math.sqrt(
+      mapCanvas.width * mapCanvas.width + mapCanvas.height * mapCanvas.height
+    );
     const rotatedCanvas = document.createElement('canvas');
     rotatedCanvas.width = diagonal;
     rotatedCanvas.height = diagonal;
@@ -39,15 +41,15 @@ export function takeScreenshot(map?: Map) {
       finalCanvas.width = hexCanvas.width;
       finalCanvas.height = hexCanvas.height;
       const finalCtx = finalCanvas.getContext('2d');
-      
+
       if (finalCtx) {
         // Center the rotated map in the final canvas
         const mapX = (hexCanvas.width - diagonal) / 2;
         const mapY = (hexCanvas.height - diagonal) / 2;
-        
+
         // Draw the rotated map
         finalCtx.drawImage(rotatedCanvas, mapX, mapY);
-        
+
         // Draw the hex overlay on top
         finalCtx.drawImage(hexCanvas, 0, 0);
 

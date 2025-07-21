@@ -1,16 +1,13 @@
 import { Map } from 'ol';
-import { HEX_SIZE_MAP } from './types';
+import { HEX_SIZE_MAP } from './config/hexSizes';
 import { drawHexGrid } from './hexGrid';
-import { getActiveCoastlineLayer } from './mapSetup';
-import {
-  goToRandomPlace,
-  setSeed,
-  generateRandomSeed,
-  getSeedFromURL,
-  updateURLWithSeed,
-} from './navigation';
+import { goToRandomPlace } from './navigation';
+import { HEX_GRID } from './constants';
+import { DOMHelper, SELECTORS } from './utils/domUtils';
+import { SeedManager } from './utils/seedManager';
+import { ErrorHandler, ErrorLevel } from './utils/errorHandler';
 
-let currentHexStep = 3; // Start with "Medium"
+let currentHexStep = HEX_GRID.DEFAULT_STEP; // Start with "Medium"
 
 export function initializeControls(map: Map) {
   // Initialize hex size display and draw initial grid
@@ -43,95 +40,66 @@ export function initializeControls(map: Map) {
 }
 
 function initializeSeedFromURL() {
-  const urlSeed = getSeedFromURL();
-  if (urlSeed !== null) {
-    const seedInput = document.querySelector<HTMLInputElement>('#seed-input')!;
-    seedInput.value = urlSeed.toString();
-    setSeed(urlSeed);
-    updateSeedDisplay(urlSeed);
-  }
+  SeedManager.initializeFromURL();
 }
 
 function updateHexSize() {
-  const display = document.querySelector<HTMLSpanElement>('#hex-size-display')!;
-  const hexConfig = HEX_SIZE_MAP[currentHexStep as keyof typeof HEX_SIZE_MAP];
+  try {
+    const hexConfig = HEX_SIZE_MAP[currentHexStep as keyof typeof HEX_SIZE_MAP];
 
-  display.textContent = hexConfig.label;
-  drawHexGrid(hexConfig.size);
+    DOMHelper.setText(SELECTORS.HEX_SIZE_DISPLAY, hexConfig.label);
+    drawHexGrid(hexConfig.size);
 
-  // Update button states
-  const decreaseBtn =
-    document.querySelector<HTMLButtonElement>('#hex-decrease')!;
-  const increaseBtn =
-    document.querySelector<HTMLButtonElement>('#hex-increase')!;
-
-  decreaseBtn.disabled = currentHexStep <= 1;
-  increaseBtn.disabled = currentHexStep >= 5;
+    // Update button states
+    DOMHelper.setButtonDisabled(
+      SELECTORS.HEX_DECREASE,
+      currentHexStep <= HEX_GRID.STEP_MIN
+    );
+    DOMHelper.setButtonDisabled(
+      SELECTORS.HEX_INCREASE,
+      currentHexStep >= HEX_GRID.STEP_MAX
+    );
+  } catch (error) {
+    ErrorHandler.logError(
+      ErrorLevel.ERROR,
+      'Failed to update hex size display',
+      { operation: 'hex_size_update', details: { currentHexStep } },
+      error
+    );
+  }
 }
 
 function decreaseHexSize() {
-  if (currentHexStep > 1) {
+  if (currentHexStep > HEX_GRID.STEP_MIN) {
     currentHexStep--;
     updateHexSize();
   }
 }
 
 function increaseHexSize() {
-  if (currentHexStep < 5) {
+  if (currentHexStep < HEX_GRID.STEP_MAX) {
     currentHexStep++;
     updateHexSize();
   }
 }
 
 function handleSeedInput() {
-  const seedInput = document.querySelector<HTMLInputElement>('#seed-input')!;
-  const inputValue = seedInput.value.trim();
-
-  if (inputValue === '') {
-    setSeed(null);
-    updateURLWithSeed(null);
-  } else {
-    const seedNumber = parseInt(inputValue, 10);
-    if (!isNaN(seedNumber)) {
-      setSeed(seedNumber);
-      updateURLWithSeed(seedNumber);
-    }
-  }
+  SeedManager.processSeedInput();
 }
 
-function updateSeedDisplay(seed: number) {
-  const display = document.querySelector<HTMLSpanElement>(
-    '#current-seed-display'
-  )!;
-  display.textContent = seed.toString();
-}
+async function handleRandomLocationClick(map: Map) {
+  try {
+    // Setup seed and navigate
+    SeedManager.setupSeedForNavigation();
 
-function handleRandomLocationClick(map: Map) {
-  // Get seed from input or generate a new one
-  const seedInput = document.querySelector<HTMLInputElement>('#seed-input')!;
-  const inputValue = seedInput.value.trim();
-
-  let seed: number;
-  if (inputValue === '') {
-    // Generate new random seed
-    seed = generateRandomSeed();
-  } else {
-    seed = parseInt(inputValue, 10);
-    if (isNaN(seed)) {
-      // If invalid input, generate new seed
-      seed = generateRandomSeed();
-    }
-    // Clear the input after using the seed
-    seedInput.value = '';
-  }
-
-  setSeed(seed);
-  updateSeedDisplay(seed);
-  updateURLWithSeed(seed);
-
-  const vectorLayer = getActiveCoastlineLayer(map);
-  const vectorSource = vectorLayer?.getSource();
-  if (vectorSource) {
-    goToRandomPlace(map, vectorSource);
+    // Use server-side navigation
+    await goToRandomPlace(map);
+  } catch (error) {
+    ErrorHandler.logError(
+      ErrorLevel.ERROR,
+      'Failed to handle random location click',
+      { operation: 'random_location_click' },
+      error
+    );
   }
 }

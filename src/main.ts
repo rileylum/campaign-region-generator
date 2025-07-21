@@ -1,12 +1,9 @@
 import './style.css';
-import {
-  createMap,
-  loadAllDatasources,
-  getActiveCoastlineLayer,
-} from './mapSetup';
+import { createMap, loadAllDatasources } from './mapSetup';
 import { DATASOURCES } from './types';
 import { initializeControls } from './controls';
 import { goToRandomPlace } from './navigation';
+import { SeedManager } from './utils/seedManager';
 import { takeScreenshot } from './screenshot';
 
 // Set up the HTML structure
@@ -44,12 +41,14 @@ async function initializeApp() {
     takeScreenshot(map);
   });
 
-  // Navigate to random place on page load after coastlines are loaded
-  const vectorLayer = getActiveCoastlineLayer(map);
-  const vectorSource = vectorLayer?.getSource();
-  if (vectorSource) {
-    goToRandomPlace(map, vectorSource);
-  }
+  // Navigate to random place on page load using server-side calculation
+  // Initialize seed from URL or generate new one
+  const initialSeed = SeedManager.initializeAppSeed();
+  SeedManager.updateSeedDisplay(initialSeed);
+  SeedManager.updateURLWithSeed(initialSeed);
+
+  // Navigate to the coastal location
+  await goToRandomPlace(map);
 }
 
 initializeApp();

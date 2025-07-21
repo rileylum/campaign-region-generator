@@ -5,59 +5,15 @@ import LineString from 'ol/geom/LineString';
 import { lineString as turfLineString } from '@turf/helpers';
 import booleanIntersects from '@turf/boolean-intersects';
 import { toLonLat, fromLonLat } from 'ol/proj';
+import { NAVIGATION, ZOOM_LEVELS } from './constants';
+import { ErrorHandler, ErrorLevel } from './utils/errorHandler';
+import { SeedManager } from './utils/seedManager';
+import { SeededRandom } from './utils/seededRandom';
 
-// Seeded random number generator
-class SeededRandom {
-  private seed: number;
-
-  constructor(seed: number) {
-    this.seed = seed;
-  }
-
-  next(): number {
-    this.seed = (this.seed * 9301 + 49297) % 233280;
-    return this.seed / 233280;
-  }
-}
-
-let currentSeed: number | null = null;
 let rng: SeededRandom | null = null;
 
-export function setSeed(seed: number | null) {
-  currentSeed = seed;
-  if (seed !== null) {
-    rng = new SeededRandom(seed);
-  } else {
-    rng = null;
-  }
-}
-
-export function getCurrentSeed(): number | null {
-  return currentSeed;
-}
-
-export function generateRandomSeed(): number {
-  return Math.floor(Math.random() * 1000000);
-}
-
-export function getSeedFromURL(): number | null {
-  const urlParams = new URLSearchParams(window.location.search);
-  const seedParam = urlParams.get('seed');
-  if (seedParam) {
-    const seed = parseInt(seedParam, 10);
-    return isNaN(seed) ? null : seed;
-  }
-  return null;
-}
-
-export function updateURLWithSeed(seed: number | null) {
-  const url = new URL(window.location.href);
-  if (seed !== null) {
-    url.searchParams.set('seed', seed.toString());
-  } else {
-    url.searchParams.delete('seed');
-  }
-  window.history.replaceState({}, '', url.toString());
+function setSeedForNavigation(seed: number) {
+  rng = new SeededRandom(seed);
 }
 
 function seededRandom(): number {
@@ -73,7 +29,7 @@ function getRandomLonLat() {
   return [lon, lat];
 }
 
-function getRandomZoom(min = 5, max = 12) {
+function getRandomZoom(min = ZOOM_LEVELS.MIN, max = ZOOM_LEVELS.MAX) {
   return seededRandom() * (max - min) + min;
 }
 
@@ -81,7 +37,10 @@ function getRandomRotation() {
   return seededRandom() * 2 * Math.PI;
 }
 
-function getViewEdgeLines(extent: number[], insetRatio = 0.05) {
+function getViewEdgeLines(
+  extent: number[],
+  insetRatio = NAVIGATION.INSET_RATIO
+) {
   let [minX, minY, maxX, maxY] = extent;
 
   const width = maxX - minX;
@@ -143,21 +102,110 @@ function countEdgeIntersections(
   return intersectingEdges;
 }
 
-export function goToRandomPlace(map: Map, vectorSource: VectorSource) {
+// Interface for server response
+interface CoastalLocation {
+  center: [number, number]; // [lon, lat] in EPSG:4326
+  zoom: number;
+  rotation: number;
+  seed: number;
+}
+
+export async function goToRandomPlace(map: Map, vectorSource?: VectorSource) {
+  const view = map.getView();
+
+  const currentSeed = SeedManager.getCurrentSeed();
+  if (!currentSeed) {
+    ErrorHandler.logError(ErrorLevel.WARN, 'No seed available for navigation', {
+      operation: 'navigation_seed_check',
+    });
+    return;
+  }
+
+  try {
+    // Get coastal location from server
+    const response = await fetch(`/api/coastal-location/${currentSeed}`);
+
+    if (!response.ok) {
+      ErrorHandler.handleAPIError(
+        `/api/coastal-location/${currentSeed}`,
+        response.status,
+        new Error(`HTTP ${response.status}`)
+      );
+      throw new Error(`Server responded with status: ${response.status}`);
+    }
+
+    const location: CoastalLocation = await response.json();
+
+    // Convert coordinates and apply to map
+    const center = fromLonLat(location.center);
+
+    ErrorHandler.logError(
+      ErrorLevel.INFO,
+      'Navigating to server-calculated coastal location',
+      {
+        operation: 'server_navigation',
+        details: {
+          center: location.center,
+          zoom: location.zoom,
+          rotation: location.rotation,
+          seed: location.seed,
+        },
+      }
+    );
+
+    view.setCenter(center);
+    view.setZoom(location.zoom);
+    view.setRotation(location.rotation);
+  } catch (error) {
+    ErrorHandler.logError(
+      ErrorLevel.ERROR,
+      'Failed to get coastal location from server',
+      { operation: 'server_navigation' },
+      error
+    );
+
+    // Fallback to client-side logic if server fails and data is available
+    if (vectorSource && vectorSource.getFeatures().length > 0) {
+      ErrorHandler.logError(
+        ErrorLevel.INFO,
+        'Falling back to client-side navigation',
+        { operation: 'client_fallback' }
+      );
+      setSeedForNavigation(currentSeed);
+      goToRandomPlaceClientSide(map, vectorSource);
+    } else {
+      // Ultimate fallback to a fixed location
+      ErrorHandler.logError(ErrorLevel.WARN, 'Using fallback location', {
+        operation: 'fallback_location',
+      });
+      const center = fromLonLat([-73.9857, 40.7484]); // New York Harbor
+      view.setCenter(center);
+      view.setZoom(8);
+      view.setRotation(0);
+    }
+  }
+}
+
+// Keep the original client-side logic as a fallback
+function goToRandomPlaceClientSide(map: Map, vectorSource: VectorSource) {
   const view = map.getView();
   const size = map.getSize();
   if (!size) return;
   let attempts = 0;
 
   function tryView() {
-    if (++attempts > 100) {
-      console.warn('No valid view found.');
+    if (++attempts > NAVIGATION.MAX_ATTEMPTS) {
+      ErrorHandler.logError(
+        ErrorLevel.WARN,
+        'No valid coastal view found after maximum attempts',
+        { operation: 'client_navigation', details: { attempts } }
+      );
       return;
     }
 
     const [lon, lat] = getRandomLonLat();
     const center = fromLonLat([lon, lat]);
-    const zoom = getRandomZoom(3, 10);
+    const zoom = getRandomZoom(ZOOM_LEVELS.MIN, ZOOM_LEVELS.MAX);
     const resolution = view.getResolutionForZoom(zoom);
     const width = size![0] * resolution;
     const height = size![1] * resolution;
@@ -176,9 +224,12 @@ export function goToRandomPlace(map: Map, vectorSource: VectorSource) {
       extent
     );
 
-    if (intersecting >= 2) {
+    if (intersecting >= NAVIGATION.MIN_INTERSECTIONS) {
       const rotation = getRandomRotation();
-      console.log(toLonLat(center), zoom, rotation);
+      ErrorHandler.logError(ErrorLevel.INFO, 'Valid coastal location found', {
+        operation: 'client_navigation',
+        details: { center: toLonLat(center), zoom, rotation, attempts },
+      });
       view.setCenter(center);
       view.setZoom(zoom);
       view.setRotation(rotation);
